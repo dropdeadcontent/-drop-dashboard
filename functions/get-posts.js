@@ -1,5 +1,5 @@
 const DB_POSTS = "3d6b9f9e1ac68389a30987072465b688";
-const DB_CLIENTES = "350b9f9e1ac6802bbfa7e7f22fe4c1cc";
+const DB_POSTS = "387b9f9e1ac68056afabf6ea73cd6b26";
 const nFetch = (url, body, token) =>
   fetch(url, {
     method: "POST",
