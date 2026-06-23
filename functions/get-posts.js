@@ -68,12 +68,15 @@ exports.handler = async function (event) {
       var p = pg.properties || {};
       var nameArr = p["Name"] && p["Name"].title;
       var clientIds = (p["Base de Clientes"] && p["Base de Clientes"].relation) || [];
+      var responsaveis = (p["Responsável"] && p["Responsável"].people) || [];
+      var responsavel = responsaveis.map(function(r){ return r.name || ""; }).filter(Boolean).join(", ");
       return {
         id: pg.id,
         name: (nameArr && nameArr[0] && nameArr[0].plain_text) || "-",
         status: (p["Etapa"] && p["Etapa"].select && p["Etapa"].select.name) || null,
         formato: (p["Formato"] && p["Formato"].select && p["Formato"].select.name) || null,
         data: (p["Data post"] && p["Data post"].date && p["Data post"].date.start) || null,
+        responsavel: responsavel || null,
         client: clientIds.length > 0
           ? clientIds.map(function (r) { return cm[r.id] || "?"; }).join(", ")
           : "Sem cliente",
