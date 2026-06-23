@@ -1,4 +1,6 @@
 const DB_POSTS = "387b9f9e1ac68056afabf6ea73cd6b26";
+const DB_CLIENTES = "350b9f9e1ac6802bbfa7e7f22fe4c1cc";
+
 const nFetch = (url, body, token) =>
   fetch(url, {
     method: "POST",
@@ -22,7 +24,7 @@ const queryAll = async (db, token, extra) => {
       token
     );
     if (data.object === "error") throw new Error(data.message);
-    results = results.concat(data.results);
+    results = results.concat(data.results || []);
     cursor = data.has_more ? data.next_cursor : undefined;
   } while (cursor);
   return results;
@@ -30,8 +32,7 @@ const queryAll = async (db, token, extra) => {
 
 exports.handler = async function (event) {
   var token = process.env.NOTION_TOKEN;
-  if (!token)
-    return { statusCode: 500, body: JSON.stringify({ error: "sem token" }) };
+  if (!token) return { statusCode: 500, body: JSON.stringify({ error: "sem token" }) };
 
   var month = (event.queryStringParameters || {}).month;
 
@@ -39,14 +40,13 @@ exports.handler = async function (event) {
     var cp = await queryAll(DB_CLIENTES, token, {
       filter: { property: "Status", select: { equals: "\uD83D\uDFE2 Ativo" } },
     });
+
     var cm = {};
-    cp.forEach(function (p) {
-      cm[p.id] =
-        (p.properties["Nome"] &&
-          p.properties["Nome"].title &&
-          p.properties["Nome"].title[0] &&
-          p.properties["Nome"].title[0].plain_text) ||
-        "Cliente";
+    (cp || []).forEach(function (p) {
+      var nome = p.properties && p.properties["Nome"] &&
+        p.properties["Nome"].title && p.properties["Nome"].title[0] &&
+        p.properties["Nome"].title[0].plain_text;
+      if (nome) cm[p.id] = nome;
     });
 
     var extra = { sorts: [{ property: "Data post", direction: "ascending" }] };
@@ -63,30 +63,26 @@ exports.handler = async function (event) {
     }
 
     var pp = await queryAll(DB_POSTS, token, extra);
-    var posts = pp.map(function (pg) {
-      var p = pg.properties;
-      var clientIds =
-        (p["Base de Clientes"] && p["Base de Clientes"].relation) || [];
+
+    var posts = (pp || []).map(function (pg) {
+      var p = pg.properties || {};
+      var nameArr = p["Name"] && p["Name"].title;
+      var clientIds = (p["Base de Clientes"] && p["Base de Clientes"].relation) || [];
       return {
         id: pg.id,
-        name:
-          (p["Name"] && p["Name"].title && p["Name"].title[0] && p["Name"].title[0].plain_text) || "-",
-        status:
-          (p["Status Geral"] && p["Status Geral"].select && p["Status Geral"].select.name) || null,
-        formato:
-          (p["Formato"] && p["Formato"].select && p["Formato"].select.name) || null,
-        data:
-          (p["Data post"] && p["Data post"].date && p["Data post"].date.start) || null,
-        client: clientIds.map(function (r) { return cm[r.id] || "?"; }).join(", ") || "Sem cliente",
+        name: (nameArr && nameArr[0] && nameArr[0].plain_text) || "-",
+        status: (p["Status Geral"] && p["Status Geral"].select && p["Status Geral"].select.name) || null,
+        formato: (p["Formato"] && p["Formato"].select && p["Formato"].select.name) || null,
+        data: (p["Data post"] && p["Data post"].date && p["Data post"].date.start) || null,
+        client: clientIds.length > 0
+          ? clientIds.map(function (r) { return cm[r.id] || "?"; }).join(", ")
+          : "Sem cliente",
       };
     });
 
     return {
       statusCode: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ posts: posts, updatedAt: new Date().toISOString() }),
     };
   } catch (e) {
