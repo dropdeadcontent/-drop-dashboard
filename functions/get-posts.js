@@ -1,4 +1,3 @@
-const DB_POSTS = "3d6b9f9e1ac68389a30987072465b688";
 const DB_POSTS = "387b9f9e1ac68056afabf6ea73cd6b26";
 const nFetch = (url, body, token) =>
   fetch(url, {
