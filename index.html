@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dashboard Drop Dead Content</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7f4;color:#1a1a1a;min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:24px 20px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.logo{font-size:17px;font-weight:600}.logo span{opacity:.45;font-weight:400}
+.controls{display:flex;gap:8px}
+select,button{font-size:13px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer}
+button:hover{background:#f0f0f0}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:24px}
+.sc{background:#fff;border:1px solid #e8e6e1;border-radius:10px;padding:14px 16px}
+.sc .lbl{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+.sc .val{font-size:26px;font-weight:600}
+.updated{font-size:11px;color:#bbb;margin-bottom:16px}
+.client-card{background:#fff;border:1px solid #e8e6e1;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.client-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:8px}
+.client-header:hover{background:#faf9f7}
+.client-name{font-size:14px;font-weight:600}
+.client-meta{font-size:12px;color:#999;margin-top:2px}
+.client-right{display:flex;align-items:center;gap:12px}
+.pct{font-size:12px;color:#666;min-width:28px;text-align:right}
+.bar{height:5px;width:70px;background:#eee;border-radius:3px;overflow:hidden}
+.fill{height:100%;background:#4d9a2b;border-radius:3px}
+.chv{font-size:13px;color:#ccc;transition:transform .2s;display:inline-block}
+.chv.open{transform:rotate(180deg)}
+.posts-table{display:none;border-top:1px solid #f0ede8}
+.posts-table.open{display:block}
+.tbl-head,.tbl-row{display:grid;grid-template-columns:1fr 78px 78px 78px 78px 78px 62px;align-items:center}
+.tbl-head{background:#faf9f7}
+.tbl-head>div{font-size:10px;color:#aaa;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:7px 10px;text-align:center}
+.tbl-head>div:first-child{text-align:left}
+.tbl-row{border-top:1px solid #f5f2ee;min-height:40px}
+.tbl-row>div{padding:7px 10px;font-size:12px}
+.dw{display:flex;align-items:center;justify-content:center}
+.dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600}
+.d-done{background:#e8f5e0;color:#3d8b1a}
+.d-act{background:#fff3e0;color:#b35c00}
+.d-no{background:#f5f5f5;color:#ccc;border:1px solid #eee}
+.pill{display:inline-flex;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.p-planej{background:#f1efe8;color:#6b6b63}
+.p-copy{background:#fff3e0;color:#b35c00}
+.p-design{background:#e8f0fb;color:#1a5aa3}
+.p-aprov{background:#ede8fe;color:#5035b3}
+.p-pub{background:#e8f5e0;color:#3d8b1a}
+.dc{font-size:11px;color:#aaa;text-align:center}
+.nop{padding:20px;text-align:center;font-size:13px;color:#bbb}
+.loading,.err{text-align:center;padding:48px 20px;font-size:14px;color:#aaa}
+.err{color:#c0392b}
+.spin{display:inline-block;animation:spin 1s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Drop Dead Content <span>/ producao</span></div>
+    <div class="controls">
+      <select id="monthSel" onchange="load()">
+        <option value="2026-06" selected>Junho 2026</option>
+        <option value="2026-07">Julho 2026</option>
+        <option value="2026-08">Agosto 2026</option>
+      </select>
+      <button onclick="load()">atualizar</button>
+    </div>
+  </header>
+  <div class="summary" id="sum" style="display:none">
+    <div class="sc"><div class="lbl">Posts</div><div class="val" id="s0">-</div></div>
+    <div class="sc"><div class="lbl">Concluidos</div><div class="val" id="s1" style="color:#4d9a2b">-</div></div>
+    <div class="sc"><div class="lbl">Em copy</div><div class="val" id="s2" style="color:#b35c00">-</div></div>
+    <div class="sc"><div class="lbl">Em design</div><div class="val" id="s3" style="color:#1a5aa3">-</div></div>
+    <div class="sc"><div class="lbl">Pauta</div><div class="val" id="s4" style="color:#6b6b63">-</div></div>
+  </div>
+  <div class="updated" id="upd" style="display:none"></div>
+  <div id="main"><div class="loading"><span class="spin">...</span> carregando...</div></div>
+</div>
+<script>
+var PK=["planej","copy","design","aprov","pub"];
+var PL=["Planej.","Copy","Design","Aprov.","Pub."];
+function phase(s){
+  if(!s)return"planej";
+  if(s.indexOf("[P]")===0)return"planej";
+  if(s.indexOf("[C]")===0)return"copy";
+  if(s.indexOf("[D]")===0)return"design";
+  if(s.indexOf("[A]")===0)return"aprov";
+  if(s.indexOf("Concluido")>=0||s.indexOf("Entregue")>=0)return"pub";
+  return"planej";
+}
+function done(s){return!!(s&&(s.indexOf("Concluido")>=0||s.indexOf("Entregue")>=0));}
+function dot(pp,cp){
+  var pi=PK.indexOf(pp),ci=PK.indexOf(cp);
+  if(done(pp)||pi>ci)return'<div class="dot d-done">ok</div>';
+  if(pi===ci)return'<div class="dot d-act">.</div>';
+  return'<div class="dot d-no"></div>';
+}
+function pill(ph){
+  var l={planej:"pauta",copy:"copy",design:"design",aprov:"aprov.",pub:"pub."};
+  return'<span class="pill p-'+ph+'">'+l[ph]+'</span>';
+}
+function fmtDate(d){
+  if(!d)return"-";
+  var p=d.split("-");return p[2]+"/"+p[1];
+}
+function trunc(s,n){return s&&s.length>n?s.slice(0,n)+"...":s||"-";}
+
+async function load(){
+  var month=document.getElementById("monthSel").value;
+  document.getElementById("main").innerHTML='<div class="loading"><span class="spin">...</span> buscando no Notion...</div>';
+  document.getElementById("sum").style.display="none";
+  document.getElementById("upd").style.display="none";
+  try{
+    var res=await fetch("/.netlify/functions/get-posts?month="+month);
+    var json=await res.json();
+    if(json.error)throw new Error(json.error);
+    render(json.posts,json.updatedAt);
+  }catch(e){
+    document.getElementById("main").innerHTML='<div class="err">Erro: '+e.message+'</div>';
+  }
+}
+
+function render(posts,updatedAt){
+  document.getElementById("s0").textContent=posts.length;
+  document.getElementById("s1").textContent=posts.filter(function(p){return done(p.status);}).length;
+  document.getElementById("s2").textContent=posts.filter(function(p){return phase(p.status)==="copy";}).length;
+  document.getElementById("s3").textContent=posts.filter(function(p){return phase(p.status)==="design";}).length;
+  document.getElementById("s4").textContent=posts.filter(function(p){return phase(p.status)==="planej";}).length;
+  document.getElementById("sum").style.display="";
+  if(updatedAt){
+    var d=new Date(updatedAt);
+    document.getElementById("upd").textContent="atualizado as "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    document.getElementById("upd").style.display="";
+  }
+  var byC={};
+  posts.forEach(function(p){
+    var c=p.client||"Sem cliente";
+    if(!byC[c])byC[c]=[];
+    byC[c].push(p);
+  });
+  var clients=Object.keys(byC).sort();
+  if(!clients.length){
+    document.getElementById("main").innerHTML='<div class="nop">Nenhum post encontrado.</div>';
+    return;
+  }
+  document.getElementById("main").innerHTML=clients.map(function(c){
+    var cp=byC[c];
+    var dn=cp.filter(function(p){return done(p.status);}).length;
+    var pct=cp.length?Math.round(dn/cp.length*100):0;
+    var rows=cp.length?
+      '<div class="tbl-head"><div>post</div>'+PL.map(function(l){return'<div>'+l+'</div>';}).join('')+'<div>data</div></div>'+
+      cp.map(function(p){
+        var ph=phase(p.status);
+        return'<div class="tbl-row"><div><div style="display:flex;align-items:center;gap:5px">'+pill(ph)+'<span style="font-size:12px">'+trunc(p.name,40)+'</span></div>'+(p.formato?'<div style="font-size:10px;color:#bbb;margin-top:2px">'+p.formato+'</div>':'')+'</div>'+PK.map(function(pk){return'<div class="dw">'+dot(ph,pk)+'</div>';}).join('')+'<div class="dc">'+fmtDate(p.data)+'</div></div>';
+      }).join('')
+      :'<div class="nop">sem posts mapeados</div>';
+    return'<div class="client-card"><div class="client-header" onclick="tog(this)"><div><div class="client-name">'+c+'</div><div class="client-meta">'+cp.length+' post'+(cp.length!==1?'s':'')+' - '+dn+' concluido'+(dn!==1?'s':'')+'</div></div><div class="client-right"><div style="display:flex;align-items:center;gap:8px"><span class="pct">'+pct+'%</span><div class="bar"><div class="fill" style="width:'+pct+'%"></div></div></div><span class="chv open">v</span></div></div><div class="posts-table open">'+rows+'</div></div>';
+  }).join("");
+}
+function tog(h){var t=h.nextElementSibling,c=h.querySelector(".chv");t.classList.toggle("open");c.classList.toggle("open");}
+load();
+</script>
+</body>
+</html>
