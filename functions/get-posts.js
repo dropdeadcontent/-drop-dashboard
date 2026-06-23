@@ -1,4 +1,4 @@
-const DB_POSTS = "387b9f9e1ac68056afabf6ea73cd6b26";
+const DB_POSTS = "350b9f9e1ac6807b8a60dd65817feaff";
 const DB_CLIENTES = "350b9f9e1ac6802bbfa7e7f22fe4c1cc";
 
 const nFetch = (url, body, token) =>
