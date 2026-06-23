@@ -66,13 +66,13 @@ exports.handler = async function (event) {
 
     var posts = (pp || []).map(function (pg) {
       var p = pg.properties || {};
-      var nameArr = p["Name"] && p["Name"].title;
+      var nameArr = (p["Name"] && p["Name"].title) || [];
       var clientIds = (p["Base de Clientes"] && p["Base de Clientes"].relation) || [];
       var responsaveis = (p["Responsável"] && p["Responsável"].people) || [];
       var responsavel = responsaveis.map(function(r){ return r.name || ""; }).filter(Boolean).join(", ");
       return {
         id: pg.id,
-        name: (nameArr && nameArr[0] && nameArr[0].plain_text) || "-",
+        name: nameArr.map(function(t){ return t.plain_text; }).join("") || "-",
         status: (p["Etapa"] && p["Etapa"].select && p["Etapa"].select.name) || null,
         formato: (p["Formato"] && p["Formato"].select && p["Formato"].select.name) || null,
         data: (p["Data post"] && p["Data post"].date && p["Data post"].date.start) || null,
