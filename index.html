@@ -247,6 +247,7 @@ function renderKanban(clients,byC){
       var dotClass=st==="ok"?"s-ok":st==="warn"?"s-warn":"s-danger";
       var barColor=st==="ok"?"#639922":st==="warn"?"#EF9F27":"#E24B4A";
       var stTxt=st==="ok"?"em dia":st==="warn"?"atencao":"atrasado";
+      var cardId="kcard-"+c.replace(/\s/g,"-");
 
       var stagePills="";
       if(sc.planej)stagePills+='<span style="font-size:10px;color:#888">'+sc.planej+' pauta</span> ';
@@ -255,11 +256,25 @@ function renderKanban(clients,byC){
       if(sc.aprov)stagePills+='<span style="font-size:10px;color:#5035b3">'+sc.aprov+' aprov</span> ';
       if(sc.pub)stagePills+='<span style="font-size:10px;color:#3B6D11">'+sc.pub+' ok</span>';
 
-      html+='<div class="kcard">';
+      var postsHtml='<div class="kcard-posts" id="'+cardId+'" style="display:none;margin-top:10px;border-top:1px solid #f0ede8;padding-top:8px">';
+      cp.forEach(function(p){
+        var ph=phase(p.status);
+        var phLabel={planej:"pauta",copy:"copy",design:"design",aprov:"aprov.",pub:"pronto"};
+        var phColor={planej:"#888",copy:"#854F0B",design:"#1a5aa3",aprov:"#5035b3",pub:"#3B6D11"};
+        var phBg={planej:"#f1efe8",copy:"#fff3e0",design:"#e8f0fb",aprov:"#ede8fe",pub:"#e8f5e0"};
+        postsHtml+='<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f5f2ee">';
+        postsHtml+='<span style="font-size:11px;color:#444;flex:1;margin-right:6px">'+trunc(p.name,28)+'</span>';
+        postsHtml+='<span style="font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;background:'+phBg[ph]+';color:'+phColor[ph]+'">'+phLabel[ph]+'</span>';
+        postsHtml+='</div>';
+      });
+      postsHtml+='</div>';
+
+      html+='<div class="kcard" onclick="toggleKCard(\''+cardId+'\')" style="cursor:pointer">';
       html+='<div class="kcard-name">'+c+'</div>';
       html+='<div class="kcard-meta">'+cp.length+' post'+(cp.length!==1?'s':'')+(stagePills?' · '+stagePills:'')+'</div>';
       html+='<div class="kcard-bottom"><span style="display:flex;align-items:center;gap:5px"><span class="status-dot '+dotClass+'"></span><span style="font-size:11px;color:#999">'+stTxt+'</span></span><span class="kcard-pct">'+pct+'%</span></div>';
       html+='<div class="kcard-bar"><div class="kcard-bar-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>';
+      html+=postsHtml;
       html+='</div>';
     });
     if(!list.length)html+='<div style="font-size:12px;color:#ccc;text-align:center;padding:12px 0">-</div>';
@@ -306,6 +321,7 @@ function renderLista(clients,byC){
 }
 
 function tog(h){var t=h.nextElementSibling,c=h.querySelector(".chv");t.classList.toggle("open");c.classList.toggle("open");}
+function toggleKCard(id){var el=document.getElementById(id);if(el)el.style.display=el.style.display==="none"?"block":"none";}
 load();
 </script>
 </body>
