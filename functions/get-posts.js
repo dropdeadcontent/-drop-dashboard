@@ -71,7 +71,7 @@ exports.handler = async function (event) {
       return {
         id: pg.id,
         name: (nameArr && nameArr[0] && nameArr[0].plain_text) || "-",
-        status: (p["Status Geral"] && p["Status Geral"].select && p["Status Geral"].select.name) || null,
+        status: (p["Etapa"] && p["Etapa"].select && p["Etapa"].select.name) || null,
         formato: (p["Formato"] && p["Formato"].select && p["Formato"].select.name) || null,
         data: (p["Data post"] && p["Data post"].date && p["Data post"].date.start) || null,
         client: clientIds.length > 0
