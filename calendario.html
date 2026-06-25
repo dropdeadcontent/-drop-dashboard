@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Calendário de Conteúdo — Drop Dead Content</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8f7f4;color:#1a1a1a;min-height:100vh}
+.wrap{max-width:1200px;margin:0 auto;padding:24px 20px}
+
+nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px}
+.nav-brand{font-size:15px;font-weight:600;color:#1a1a1a}
+.nav-brand span{font-weight:400;opacity:.4}
+.nav-links{display:flex;gap:6px;flex-wrap:wrap}
+.nav-link{font-size:12px;padding:5px 12px;border:1px solid #e0ded9;border-radius:8px;background:#fff;color:#555;text-decoration:none;cursor:pointer}
+.nav-link:hover,.nav-link.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+.controls{display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+select,button{font-size:13px;padding:6px 12px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;color:#1a1a1a}
+button:hover{background:#f0ede8}
+.view-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+
+.stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.stat-pill{font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+.s-pauta{background:#f1efe8;color:#888}
+.s-copy{background:#fff3e0;color:#854F0B}
+.s-design{background:#e8f0fb;color:#1a5aa3}
+.s-aprov{background:#ede8fe;color:#5035b3}
+.s-ok{background:#EAF3DE;color:#3B6D11}
+
+.upd{font-size:11px;color:#ccc;margin-bottom:12px}
+
+/* Calendar view */
+.cal-wrap{overflow-x:auto}
+.cal-grid{min-width:800px}
+.cal-header{display:grid;border-bottom:2px solid #e8e6e1;margin-bottom:0}
+.cal-header-cell{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#aaa;padding:8px 10px;text-align:center}
+.cal-row{display:grid;border-bottom:1px solid #f0ede8;min-height:80px;align-items:stretch}
+.cal-row:last-child{border-bottom:none}
+.cal-cell{padding:8px 6px;border-right:1px solid #f5f2ee;min-height:80px}
+.cal-cell:last-child{border-right:none}
+.cal-client-name{font-size:11px;font-weight:600;color:#1a1a1a;margin-bottom:6px;padding:0 2px}
+.cal-day-label{font-size:10px;color:#ccc;margin-bottom:4px;text-align:center}
+.cal-posts{display:flex;flex-direction:column;gap:3px}
+.cal-post{font-size:10px;padding:3px 6px;border-radius:6px;line-height:1.3;cursor:default;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cp-pauta{background:#f1efe8;color:#666}
+.cp-copy{background:#fff3e0;color:#854F0B}
+.cp-design{background:#e8f0fb;color:#1a5aa3}
+.cp-aprov{background:#ede8fe;color:#5035b3}
+.cp-ok{background:#EAF3DE;color:#3B6D11}
+
+/* List view */
+.client-block{background:#fff;border:1px solid #e8e6e1;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.client-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:8px}
+.client-header:hover{background:#fafaf8}
+.client-name{font-size:14px;font-weight:600}
+.client-meta{font-size:12px;color:#aaa;margin-top:2px}
+.chv{color:#ccc;transition:transform .2s;font-size:14px}
+.chv.open{transform:rotate(180deg)}
+.posts-list{display:none;border-top:1px solid #f0ede8}
+.posts-list.open{display:block}
+.post-row{padding:10px 16px;border-bottom:1px solid #f5f2ee;display:flex;align-items:center;gap:10px}
+.post-row:last-child{border-bottom:none}
+.post-row:hover{background:#fafaf8}
+.post-date{font-size:11px;color:#aaa;min-width:44px;flex-shrink:0}
+.post-name{font-size:13px;color:#1a1a1a;flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.post-format{font-size:10px;color:#bbb;min-width:60px;text-align:right;flex-shrink:0}
+.post-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;flex-shrink:0}
+.post-resp{font-size:10px;color:#bbb;min-width:60px;text-align:right;flex-shrink:0}
+
+/* Semana view */
+.week-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media(max-width:700px){.week-grid{grid-template-columns:repeat(2,1fr)}}
+.week-col{background:#fff;border:1px solid #e8e6e1;border-radius:10px;padding:10px;min-height:200px}
+.week-day-header{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#aaa;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0ede8}
+.week-post{padding:6px 8px;border-radius:8px;margin-bottom:5px;cursor:default}
+.week-post-client{font-size:10px;color:#aaa;margin-bottom:1px}
+.week-post-name{font-size:11px;font-weight:500;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+.loading{text-align:center;padding:48px;font-size:13px;color:#aaa}
+.spin{display:inline-block;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err{color:#A32D2D;font-size:12px;padding:16px;text-align:center}
+.nop{padding:24px;text-align:center;font-size:13px;color:#ccc}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="nav-brand">Drop Dead Content <span>/ calendário</span></div>
+    <div class="nav-links">
+      <a class="nav-link" href="/ceo.html">Painel CEO</a>
+      <a class="nav-link active" href="/calendario.html">Calendário de Conteúdo</a>
+      <a class="nav-link" href="/index.html">Produção</a>
+    </div>
+  </nav>
+
+  <div class="controls">
+    <select id="monthSel" onchange="load()">
+      <option value="2026-06">Junho 2026</option>
+      <option value="2026-07" selected>Julho 2026</option>
+      <option value="2026-08">Agosto 2026</option>
+    </select>
+    <button class="view-btn active" id="btn-semana" onclick="setView('semana')">semana</button>
+    <button class="view-btn" id="btn-lista" onclick="setView('lista')">lista</button>
+    <button onclick="load()">↻ atualizar</button>
+    <select id="clientFilter" onchange="render()">
+      <option value="">todos os clientes</option>
+    </select>
+    <select id="statusFilter" onchange="render()">
+      <option value="">todas as etapas</option>
+      <option value="pauta">pauta</option>
+      <option value="copy">copy</option>
+      <option value="design">design</option>
+      <option value="aprov">aprovação</option>
+      <option value="pub">pronto</option>
+    </select>
+  </div>
+
+  <div id="stats" class="stats" style="display:none"></div>
+  <div id="upd" class="upd" style="display:none"></div>
+  <div id="main"><div class="loading"><span class="spin">⟳</span> carregando...</div></div>
+
+</div>
+
+<script>
+var PH_LABEL = {pauta:"pauta",copy:"copy",design:"design",aprov:"aprov.",pub:"pronto"};
+var PH_CLS = {pauta:"cp-pauta",copy:"cp-copy",design:"cp-design",aprov:"cp-aprov",pub:"cp-ok"};
+var PH_BG = {pauta:"#f1efe8",copy:"#fff3e0",design:"#e8f0fb",aprov:"#ede8fe",pub:"#EAF3DE"};
+var PH_FG = {pauta:"#666",copy:"#854F0B",design:"#1a5aa3",aprov:"#5035b3",pub:"#3B6D11"};
+var currentView = "semana";
+var allPosts = [], byClient = {};
+
+function phase(s) {
+  if (!s) return "pauta";
+  if (s.indexOf("[P]") === 0) return "pauta";
+  if (s.indexOf("[C]") === 0) return "copy";
+  if (s.indexOf("[D]") === 0) return "design";
+  if (s.indexOf("[A]") === 0) return "aprov";
+  if (s.indexOf("Conclu") >= 0 || s.indexOf("Entregue") >= 0) return "pub";
+  return "pauta";
+}
+
+function fmtDate(d) {
+  if (!d) return "";
+  var p = d.split("-");
+  return p[2] + "/" + p[1];
+}
+
+function trunc(s, n) { return s && s.length > n ? s.slice(0, n) + "…" : (s || "-"); }
+
+function setView(v) {
+  currentView = v;
+  ["semana","lista"].forEach(function(x) {
+    document.getElementById("btn-" + x).className = "view-btn" + (v === x ? " active" : "");
+  });
+  render();
+}
+
+function getFiltered() {
+  var cf = document.getElementById("clientFilter").value;
+  var sf = document.getElementById("statusFilter").value;
+  return allPosts.filter(function(p) {
+    if (cf && p.client !== cf) return false;
+    if (sf && phase(p.status) !== sf) return false;
+    return true;
+  });
+}
+
+async function load() {
+  var month = document.getElementById("monthSel").value;
+  document.getElementById("main").innerHTML = '<div class="loading"><span class="spin">⟳</span> buscando no Notion...</div>';
+  document.getElementById("stats").style.display = "none";
+  try {
+    var res = await fetch("/.netlify/functions/get-posts?month=" + month);
+    var json = await res.json();
+    if (json.error) throw new Error(json.error);
+    allPosts = json.posts || [];
+
+    // Build client list
+    var clients = [];
+    byClient = {};
+    allPosts.forEach(function(p) {
+      var c = p.client || "Sem cliente";
+      if (!byClient[c]) { byClient[c] = []; clients.push(c); }
+      byClient[c].push(p);
+    });
+    clients.sort();
+
+    // Populate client filter
+    var cf = document.getElementById("clientFilter");
+    var cur = cf.value;
+    cf.innerHTML = '<option value="">todos os clientes</option>';
+    clients.forEach(function(c) {
+      var opt = document.createElement("option");
+      opt.value = c; opt.textContent = c;
+      if (c === cur) opt.selected = true;
+      cf.appendChild(opt);
+    });
+
+    // Stats
+    var counts = {pauta:0,copy:0,design:0,aprov:0,pub:0};
+    allPosts.forEach(function(p) { counts[phase(p.status)]++; });
+    var statsEl = document.getElementById("stats");
+    statsEl.innerHTML =
+      '<span class="stat-pill s-pauta">' + counts.pauta + ' pauta</span>' +
+      '<span class="stat-pill s-copy">' + counts.copy + ' copy</span>' +
+      '<span class="stat-pill s-design">' + counts.design + ' design</span>' +
+      '<span class="stat-pill s-aprov">' + counts.aprov + ' aprov.</span>' +
+      '<span class="stat-pill s-ok">' + counts.pub + ' prontos</span>';
+    statsEl.style.display = "flex";
+
+    if (json.updatedAt) {
+      var d = new Date(json.updatedAt);
+      document.getElementById("upd").textContent = "atualizado às " + d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+      document.getElementById("upd").style.display = "";
+    }
+
+    render();
+  } catch(e) {
+    document.getElementById("main").innerHTML = '<div class="err">Erro: ' + e.message + '</div>';
+  }
+}
+
+function render() {
+  if (currentView === "semana") renderSemana();
+  else renderLista();
+}
+
+function renderSemana() {
+  var posts = getFiltered();
+  if (!posts.length) { document.getElementById("main").innerHTML = '<div class="nop">Nenhum post encontrado.</div>'; return; }
+
+  // Group by week
+  var byWeek = {};
+  posts.forEach(function(p) {
+    if (!p.data) { if (!byWeek["sem data"]) byWeek["sem data"] = []; byWeek["sem data"].push(p); return; }
+    var d = new Date(p.data + "T00:00:00");
+    var day = d.getDay(); // 0=sun
+    var monday = new Date(d);
+    monday.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+    var key = monday.toISOString().split("T")[0];
+    if (!byWeek[key]) byWeek[key] = [];
+    byWeek[key].push(p);
+  });
+
+  var weeks = Object.keys(byWeek).filter(function(k) { return k !== "sem data"; }).sort();
+  if (byWeek["sem data"]) weeks.push("sem data");
+
+  var html = "";
+  weeks.forEach(function(wk) {
+    var wPosts = byWeek[wk];
+    var weekLabel = "";
+    if (wk !== "sem data") {
+      var mon = new Date(wk + "T00:00:00");
+      var fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+      weekLabel = "Semana de " + fmtDate(wk) + " → " + fmtDate(fri.toISOString().split("T")[0]);
+    } else {
+      weekLabel = "Sem data definida";
+    }
+
+    html += '<div style="margin-bottom:20px">';
+    html += '<div style="font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px">' + weekLabel + '</div>';
+    html += '<div class="week-grid">';
+
+    var dayNames = ["segunda","terça","quarta","quinta","sexta"];
+    var dayPosts = {seg:[],ter:[],qua:[],qui:[],sex:[],outro:[]};
+
+    wPosts.forEach(function(p) {
+      if (!p.data) { dayPosts.outro.push(p); return; }
+      var d = new Date(p.data + "T00:00:00").getDay();
+      if (d===1) dayPosts.seg.push(p);
+      else if (d===2) dayPosts.ter.push(p);
+      else if (d===3) dayPosts.qua.push(p);
+      else if (d===4) dayPosts.qui.push(p);
+      else if (d===5) dayPosts.sex.push(p);
+      else dayPosts.outro.push(p);
+    });
+
+    ["seg","ter","qua","qui","sex"].forEach(function(dk, i) {
+      var dp = dayPosts[dk];
+      html += '<div class="week-col">';
+      html += '<div class="week-day-header">' + dayNames[i] + '</div>';
+      if (!dp.length) {
+        html += '<div style="font-size:11px;color:#e0ded9;text-align:center;padding-top:20px">—</div>';
+      } else {
+        dp.forEach(function(p) {
+          var ph = phase(p.status);
+          html += '<div class="week-post" style="background:' + PH_BG[ph] + '">';
+          html += '<div class="week-post-client" style="color:' + PH_FG[ph] + ';opacity:.7">' + (p.client || "?") + ' · ' + PH_LABEL[ph] + '</div>';
+          html += '<div class="week-post-name" style="color:' + PH_FG[ph] + '">' + trunc(p.name, 35) + '</div>';
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  document.getElementById("main").innerHTML = html || '<div class="nop">Nenhum post com data.</div>';
+}
+
+function renderLista() {
+  var posts = getFiltered();
+  if (!posts.length) { document.getElementById("main").innerHTML = '<div class="nop">Nenhum post encontrado.</div>'; return; }
+
+  var grouped = {};
+  posts.forEach(function(p) {
+    var c = p.client || "Sem cliente";
+    if (!grouped[c]) grouped[c] = [];
+    grouped[c].push(p);
+  });
+
+  var html = "";
+  Object.keys(grouped).sort().forEach(function(c) {
+    var cp = grouped[c];
+    var counts = {pauta:0,copy:0,design:0,aprov:0,pub:0};
+    cp.forEach(function(p) { counts[phase(p.status)]++; });
+    var pct = Math.round(counts.pub / cp.length * 100);
+
+    var pills = "";
+    if (counts.pauta) pills += '<span class="stat-pill s-pauta" style="font-size:10px;padding:2px 8px">' + counts.pauta + ' pauta</span> ';
+    if (counts.copy) pills += '<span class="stat-pill s-copy" style="font-size:10px;padding:2px 8px">' + counts.copy + ' copy</span> ';
+    if (counts.design) pills += '<span class="stat-pill s-design" style="font-size:10px;padding:2px 8px">' + counts.design + ' design</span> ';
+    if (counts.aprov) pills += '<span class="stat-pill s-aprov" style="font-size:10px;padding:2px 8px">' + counts.aprov + ' aprov</span> ';
+    if (counts.pub) pills += '<span class="stat-pill s-ok" style="font-size:10px;padding:2px 8px">' + counts.pub + ' ok</span>';
+
+    var cardId = "cb-" + c.replace(/[\s\W]/g, "-");
+    html += '<div class="client-block">';
+    html += '<div class="client-header" onclick="tog(this)">';
+    html += '<div><div class="client-name">' + c + '</div><div class="client-meta">' + cp.length + ' posts · ' + pct + '% concluídos &nbsp;' + pills + '</div></div>';
+    html += '<span class="chv open">▾</span>';
+    html += '</div>';
+    html += '<div class="posts-list open">';
+    cp.forEach(function(p) {
+      var ph = phase(p.status);
+      html += '<div class="post-row">';
+      html += '<div class="post-date">' + (p.data ? fmtDate(p.data) : "—") + '</div>';
+      html += '<div class="post-name">' + (p.name || "—") + '</div>';
+      html += '<div class="post-format">' + (p.formato || "") + '</div>';
+      html += '<div class="post-badge" style="background:' + PH_BG[ph] + ';color:' + PH_FG[ph] + '">' + PH_LABEL[ph] + '</div>';
+      html += '<div class="post-resp">' + (p.responsavel || "") + '</div>';
+      html += '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  document.getElementById("main").innerHTML = html;
+}
+
+function tog(h) {
+  var t = h.nextElementSibling;
+  var c = h.querySelector(".chv");
+  t.classList.toggle("open");
+  c.classList.toggle("open");
+}
+
+load();
+</script>
+</body>
+</html>
