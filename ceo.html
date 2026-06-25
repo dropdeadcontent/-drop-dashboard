@@ -182,6 +182,11 @@ tr:hover td{background:#fafaf8}
     </div>
   </div>
 
+  <div style="margin-bottom:20px">
+    <div class="sec-title"><span class="dot dp"></span>Minha fila — posts aguardando copy</div>
+    <div class="card" id="bloco-fila"><div class="loading"><span class="spin">⟳</span></div></div>
+  </div>
+
   <div class="grid2">
     <div>
       <div class="sec-title"><span class="dot da"></span>Prazos do ciclo — agosto 2026</div>
@@ -327,6 +332,92 @@ async function loadCiclo() {
 function loadAll() {
   greet();
   loadCiclo();
+  loadFila();
+}
+
+async function loadFila() {
+  try {
+    var month = "2026-07";
+    var res = await fetch("/.netlify/functions/get-posts?month=" + month);
+    var json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    var posts = json.posts || [];
+
+    // Posts que precisam de copy = sem etapa OU etapa [P]
+    var pendentes = posts.filter(function(p) {
+      return !p.status || p.status.indexOf("[P]") === 0;
+    });
+
+    if (!pendentes.length) {
+      document.getElementById("bloco-fila").innerHTML = '<div class="nop">Nenhum post aguardando copy</div>';
+      return;
+    }
+
+    // Agrupar por cliente
+    var porCliente = {};
+    pendentes.forEach(function(p) {
+      var c = p.client || "Sem cliente";
+      if (!porCliente[c]) porCliente[c] = [];
+      porCliente[c].push(p);
+    });
+
+    // Total por cliente para barra de progresso
+    var totalPorCliente = {};
+    posts.forEach(function(p) {
+      var c = p.client || "Sem cliente";
+      totalPorCliente[c] = (totalPorCliente[c] || 0) + 1;
+    });
+
+    var html = '<table><thead><tr>';
+    html += '<th style="width:28%">Cliente</th>';
+    html += '<th style="width:12%">Pendentes</th>';
+    html += '<th style="width:35%">Progresso</th>';
+    html += '<th style="width:25%">Post mais urgente</th>';
+    html += '</tr></thead><tbody>';
+
+    Object.keys(porCliente).sort().forEach(function(c) {
+      var cp = porCliente[c];
+      var total = totalPorCliente[c] || cp.length;
+      var done = total - cp.length;
+      var pct = Math.round(done / total * 100);
+
+      // Post mais urgente = menor data
+      var comData = cp.filter(function(p) { return p.data; }).sort(function(a,b) { return new Date(a.data) - new Date(b.data); });
+      var urgente = comData.length ? comData[0] : cp[0];
+      var diasRestantes = urgente.data ? diasAte(urgente.data) : null;
+
+      var alertColor = diasRestantes === null ? "#aaa" : diasRestantes < 10 ? "#A32D2D" : diasRestantes < 20 ? "#854F0B" : "#3B6D11";
+      var alertBg = diasRestantes === null ? "#f8f7f4" : diasRestantes < 10 ? "#FCEBEB" : diasRestantes < 20 ? "#FAEEDA" : "#EAF3DE";
+
+      html += '<tr>';
+      html += '<td style="font-weight:600">' + c + '</td>';
+      html += '<td><span style="font-size:13px;font-weight:600;color:#A32D2D">' + cp.length + '</span><span style="font-size:10px;color:#aaa"> / ' + total + '</span></td>';
+      html += '<td>';
+      html += '<div style="display:flex;align-items:center;gap:6px">';
+      html += '<div style="flex:1;height:6px;background:#f0ede8;border-radius:3px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:#639922;border-radius:3px"></div></div>';
+      html += '<span style="font-size:10px;color:#aaa;min-width:28px">' + pct + '%</span>';
+      html += '</div>';
+      html += '</td>';
+      html += '<td>';
+      if (urgente) {
+        html += '<div style="display:flex;align-items:center;gap:5px">';
+        html += '<span style="font-size:10px;background:' + alertBg + ';color:' + alertColor + ';padding:2px 7px;border-radius:10px;font-weight:600;white-space:nowrap">';
+        html += urgente.data ? fmtData(urgente.data) : "sem data";
+        html += diasRestantes !== null ? ' (' + (diasRestantes < 0 ? Math.abs(diasRestantes) + "d atraso" : diasRestantes + "d") + ')' : '';
+        html += '</span>';
+        html += '</div>';
+      }
+      html += '</td>';
+      html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    document.getElementById("bloco-fila").innerHTML = html;
+
+  } catch(e) {
+    document.getElementById("bloco-fila").innerHTML = '<div class="err">Erro: ' + e.message + '</div>';
+  }
 }
 
 loadAll();

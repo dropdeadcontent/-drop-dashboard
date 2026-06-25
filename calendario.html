@@ -313,12 +313,41 @@ function renderLista() {
     grouped[c].push(p);
   });
 
+  // Total geral por cliente (sem filtro) para barra de progresso real
+  var totalGeral = {};
+  allPosts.forEach(function(p) {
+    var c = p.client || "Sem cliente";
+    totalGeral[c] = (totalGeral[c] || 0) + 1;
+  });
+
+  var today = new Date(); today.setHours(0,0,0,0);
+
   var html = "";
   Object.keys(grouped).sort().forEach(function(c) {
     var cp = grouped[c];
     var counts = {pauta:0,copy:0,design:0,aprov:0,pub:0};
     cp.forEach(function(p) { counts[phase(p.status)]++; });
-    var pct = Math.round(counts.pub / cp.length * 100);
+
+    // Progresso real baseado no total do cliente
+    var totalC = totalGeral[c] || cp.length;
+    var doneC = allPosts.filter(function(p) {
+      return (p.client || "Sem cliente") === c && phase(p.status) === "pub";
+    }).length;
+    var pct = Math.round(doneC / totalC * 100);
+
+    // Urgencia: post mais próximo ainda não pronto
+    var pendentes = cp.filter(function(p) { return phase(p.status) !== "pub" && p.data; });
+    pendentes.sort(function(a,b) { return new Date(a.data) - new Date(b.data); });
+    var urgente = pendentes[0];
+    var diasUrgente = urgente ? Math.round((new Date(urgente.data + "T00:00:00") - today) / 86400000) : null;
+    var alertColor = diasUrgente === null ? "#ccc" : diasUrgente < 10 ? "#A32D2D" : diasUrgente < 20 ? "#854F0B" : "#3B6D11";
+    var alertBg = diasUrgente === null ? "#f8f7f4" : diasUrgente < 10 ? "#FCEBEB" : diasUrgente < 20 ? "#FAEEDA" : "#EAF3DE";
+    var barColor = pct === 100 ? "#639922" : diasUrgente !== null && diasUrgente < 10 ? "#E24B4A" : "#EF9F27";
+
+    // Etapa predominante
+    var order = ["copy","design","aprov","pauta","pub"];
+    var etapaMain = "pauta";
+    for (var i = 0; i < order.length; i++) { if (counts[order[i]] > 0) { etapaMain = order[i]; break; } }
 
     var pills = "";
     if (counts.pauta) pills += '<span class="stat-pill s-pauta" style="font-size:10px;padding:2px 8px">' + counts.pauta + ' pauta</span> ';
@@ -327,16 +356,32 @@ function renderLista() {
     if (counts.aprov) pills += '<span class="stat-pill s-aprov" style="font-size:10px;padding:2px 8px">' + counts.aprov + ' aprov</span> ';
     if (counts.pub) pills += '<span class="stat-pill s-ok" style="font-size:10px;padding:2px 8px">' + counts.pub + ' ok</span>';
 
-    var cardId = "cb-" + c.replace(/[\s\W]/g, "-");
     html += '<div class="client-block">';
     html += '<div class="client-header" onclick="tog(this)">';
-    html += '<div><div class="client-name">' + c + '</div><div class="client-meta">' + cp.length + ' posts · ' + pct + '% concluídos &nbsp;' + pills + '</div></div>';
+    html += '<div style="flex:1">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+    html += '<div class="client-name">' + c + '</div>';
+    if (diasUrgente !== null) {
+      html += '<span style="font-size:10px;background:' + alertBg + ';color:' + alertColor + ';padding:2px 8px;border-radius:10px;font-weight:600">';
+      html += diasUrgente < 0 ? Math.abs(diasUrgente) + "d atraso" : diasUrgente === 0 ? "publica hoje" : "próximo em " + diasUrgente + "d";
+      html += '</span>';
+    }
+    html += '</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="flex:1;height:4px;background:#f0ede8;border-radius:2px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:2px"></div></div>';
+    html += '<span style="font-size:10px;color:#aaa;min-width:28px">' + pct + '%</span>';
+    html += '</div>';
+    html += '<div class="client-meta" style="margin-top:4px">' + cp.length + ' posts &nbsp;' + pills + '</div>';
+    html += '</div>';
     html += '<span class="chv open">▾</span>';
     html += '</div>';
+
     html += '<div class="posts-list open">';
-    cp.forEach(function(p) {
+    cp.sort(function(a,b) { return (a.data||"") > (b.data||"") ? 1 : -1; }).forEach(function(p) {
       var ph = phase(p.status);
-      html += '<div class="post-row">';
+      var dDias = p.data ? Math.round((new Date(p.data + "T00:00:00") - today) / 86400000) : null;
+      var urgBg = dDias === null ? "transparent" : dDias < 10 && ph !== "pub" ? "#fff5f5" : "transparent";
+      html += '<div class="post-row" style="background:' + urgBg + '">';
       html += '<div class="post-date">' + (p.data ? fmtDate(p.data) : "—") + '</div>';
       html += '<div class="post-name">' + (p.name || "—") + '</div>';
       html += '<div class="post-format">' + (p.formato || "") + '</div>';
