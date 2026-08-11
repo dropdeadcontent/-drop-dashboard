@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel FUP · Drop Dead Content</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F3F2EE; --card:#FFFFFF; --ink:#16130F; --ink-soft:#57514A; --ink-faint:#8B857C;
+  --line:#E4E1DA; --line-soft:#EEEBE4;
+  --voce:#FF2E63; --travado:#E0453A; --aprov:#E8A33D; --prod:#3B6EA5; --cliente:#8A5CD1; --ok:#2E9E6B; --na:#9A958C;
+  --shadow:0 1px 2px rgba(22,19,15,.04),0 6px 20px rgba(22,19,15,.05);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.5;font-size:14px;-webkit-font-smoothing:antialiased}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1240px;margin:0 auto;padding:0 22px}
+
+/* header */
+header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:50}
+.htop{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 0 14px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand .logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:20px;letter-spacing:-.02em;text-transform:uppercase}
+.brand .logo b{color:var(--voce)}
+.brand .sub{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-faint)}
+.sync{display:flex;align-items:center;gap:12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block;box-shadow:0 0 0 3px rgba(46,158,107,.18)}
+.dot.saved{background:var(--aprov);box-shadow:0 0 0 3px rgba(232,163,61,.18)}
+.dot.err{background:var(--travado);box-shadow:0 0 0 3px rgba(224,69,58,.18)}
+.rbtn{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.03em;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:7px 12px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s,transform .15s}
+.rbtn:hover{border-color:var(--ink)}
+.rbtn:active{transform:translateY(1px)}
+.rbtn.busy{opacity:.55;pointer-events:none}
+.spin{width:11px;height:11px;border:1.6px solid var(--line);border-top-color:var(--ink);border-radius:50%;display:inline-block;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* tabs */
+.tabs{display:flex;gap:2px;padding-bottom:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;color:var(--ink-soft);background:none;border:none;padding:10px 4px;margin-right:22px;cursor:pointer;position:relative;white-space:nowrap}
+.tab .n{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-left:6px}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--ink)}
+.tab.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--ink)}
+.tab.on.alert::after{background:var(--voce)}
+.tab.on.alert{color:var(--voce)}
+
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:22px 0 8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 15px;box-shadow:var(--shadow)}
+.kpi .k{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint)}
+.kpi .v{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:30px;line-height:1.1;margin-top:6px;letter-spacing:-.02em}
+.kpi.hot{border-color:rgba(255,46,99,.35);background:linear-gradient(180deg,rgba(255,46,99,.05),var(--card))}
+.kpi.hot .v{color:var(--voce)}
+.kpi .meta{font-size:11px;color:var(--ink-soft);margin-top:2px}
+
+main{padding:8px 0 60px}
+.view{display:none;animation:fade .25s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* section title */
+.sect{display:flex;align-items:baseline;gap:10px;margin:26px 0 14px}
+.sect h2{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.01em;margin:0}
+.sect .c{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint)}
+.sect .rule{flex:1;height:1px;background:var(--line);align-self:center}
+
+/* client grid */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:14px}
+.ccard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--shadow);display:flex}
+.ccard .spine{width:5px;flex:0 0 5px}
+.ccard .body{padding:15px 16px 16px;flex:1;min-width:0}
+.ccard .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.ccard .name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.pill{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.03em;text-transform:uppercase;padding:4px 8px;border-radius:999px;white-space:nowrap;font-weight:500}
+.txt{font-size:13px;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word;max-height:150px;overflow:auto;padding-right:4px}
+.txt::-webkit-scrollbar{width:6px}.txt::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.txt a{color:var(--prod);text-decoration:none}.txt a:hover{text-decoration:underline}
+.ccard .foot{display:flex;align-items:center;gap:8px;margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);flex-wrap:wrap}
+.age{padding:2px 7px;border-radius:6px;background:var(--line-soft);color:var(--ink-soft)}
+.age.warn{background:rgba(232,163,61,.16);color:#9c6b16}
+.age.bad{background:rgba(224,69,58,.14);color:#b3352b}
+
+/* chips (client selector) */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.chip{font-family:'Inter',sans-serif;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--card);color:var(--ink-soft);padding:7px 13px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:7px;transition:border-color .15s,color .15s}
+.chip:hover{border-color:var(--ink);color:var(--ink)}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.chip .cdot{width:7px;height:7px;border-radius:50%}
+
+/* timeline entries */
+.tl{position:relative;margin-left:6px}
+.entry{position:relative;padding:0 0 20px 26px;border-left:1.5px solid var(--line)}
+.entry:last-child{border-left-color:transparent}
+.entry .node{position:absolute;left:-6.5px;top:2px;width:12px;height:12px;border-radius:50%;background:var(--card);border:2px solid var(--na)}
+.entry .date{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--ink);margin-bottom:6px}
+.entry .date .st{font-size:10px;text-transform:uppercase;letter-spacing:.03em;padding:2px 7px;border-radius:999px;margin-left:8px}
+.block{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px 14px;box-shadow:var(--shadow);margin-bottom:8px}
+.block .lab{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:5px}
+.block .val{font-size:13px;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word}
+.block .val a{color:var(--prod);text-decoration:none}.block .val a:hover{text-decoration:underline}
+
+/* day cards (linha do tempo) */
+.day{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.day .dhead{padding:14px 16px;cursor:pointer;display:flex;align-items:flex-start;gap:14px;justify-content:space-between}
+.day .dhead:hover{background:var(--line-soft)}
+.day .dl{min-width:0}
+.day .ddate{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.day .dsum{font-size:13px;color:var(--ink-soft);margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.day .dcli{display:flex;gap:5px;flex-wrap:wrap;margin-top:9px}
+.day .tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 7px;border-radius:6px;background:var(--line-soft);color:var(--ink-soft);display:inline-flex;align-items:center;gap:5px}
+.day .tag .td{width:6px;height:6px;border-radius:50%}
+.caret{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);flex:0 0 auto;padding-top:2px;transition:transform .2s}
+.day.open .caret{transform:rotate(90deg)}
+.day .ddetail{display:none;border-top:1px solid var(--line-soft);padding:6px 16px 8px}
+.day.open .ddetail{display:block}
+.drow{padding:11px 0;border-bottom:1px solid var(--line-soft)}
+.drow:last-child{border-bottom:none}
+.drow .dn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.drow .dn .td{width:7px;height:7px;border-radius:50%}
+.drow .dt{font-size:13px;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word}
+.drow .dt a{color:var(--prod);text-decoration:none}
+
+/* pendências columns */
+.pcols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.pcol{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.pcol .ph{padding:13px 15px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line-soft)}
+.pcol .ph .pt{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+.pcol .ph .pt .pdot{width:9px;height:9px;border-radius:50%}
+.pcol .ph .pc{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500;color:var(--ink-faint)}
+.pcol .pbody{padding:6px 0}
+.pitem{padding:11px 15px;border-bottom:1px solid var(--line-soft)}
+.pitem:last-child{border-bottom:none}
+.pitem .pn{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13.5px;margin-bottom:3px;display:flex;justify-content:space-between;gap:8px}
+.pitem .pn .pd{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);font-weight:400}
+.pitem .ps{font-size:12.5px;color:var(--ink-soft);white-space:pre-wrap;word-break:break-word}
+.pitem .ps a{color:var(--prod);text-decoration:none}
+.pempty{padding:20px 15px;text-align:center;color:var(--ink-faint);font-size:12.5px;font-style:italic}
+
+.notice{background:rgba(232,163,61,.1);border:1px solid rgba(232,163,61,.3);color:#8a5e12;border-radius:10px;padding:11px 14px;font-size:12.5px;margin:16px 0 0;display:none}
+.notice.show{display:block}
+.notice b{font-weight:600}
+
+footer{border-top:1px solid var(--line);padding:20px 0;color:var(--ink-faint);font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center}
+
+@media(max-width:880px){
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi:last-child{grid-column:1/-1}
+}
+@media(max-width:560px){
+  .wrap{padding:0 15px}
+  .kpi .v{font-size:26px}
+  .grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="htop">
+      <div class="brand">
+        <span class="logo">Drop <b>Dead</b></span>
+        <span class="sub">FUP · Painel operacional</span>
+      </div>
+      <div class="sync">
+        <span id="syncState"><span class="dot" id="syncDot"></span> <span id="syncLabel">carregando…</span></span>
+        <button class="rbtn" id="refreshBtn" onclick="loadLive()"><span id="refIcon">↻</span> Atualizar</button>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab on" data-tab="painel" onclick="setTab('painel')">Painel<span class="n" id="tPainel"></span></button>
+      <button class="tab" data-tab="cliente" onclick="setTab('cliente')">Por cliente</button>
+      <button class="tab" data-tab="timeline" onclick="setTab('timeline')">Linha do tempo<span class="n" id="tDays"></span></button>
+      <button class="tab alert" data-tab="pend" onclick="setTab('pend')">Pendências<span class="n" id="tPend"></span></button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="notice" id="savedNotice"><b>Mostrando dados salvos.</b> A leitura ao vivo da planilha foi bloqueada aqui na pré-visualização. Hospede este arquivo no seu Netlify (ou abra direto no navegador) que a conexão ao vivo funciona — a Marianna responde o formulário e o painel se atualiza sozinho ao clicar em Atualizar.</div>
+
+    <!-- PAINEL -->
+    <section class="view on" id="view-painel">
+      <div class="kpis" id="kpis"></div>
+      <div class="sect"><h2>Status de cada cliente</h2><span class="c" id="painelCount"></span><span class="rule"></span></div>
+      <div class="grid" id="clientGrid"></div>
+    </section>
+
+    <!-- POR CLIENTE -->
+    <section class="view" id="view-cliente">
+      <div class="sect"><h2>Escolha um cliente</h2><span class="rule"></span></div>
+      <div class="chips" id="clientChips"></div>
+      <div id="clientHistory" style="margin-top:22px"></div>
+    </section>
+
+    <!-- LINHA DO TEMPO -->
+    <section class="view" id="view-timeline">
+      <div class="sect"><h2>O que a Marianna fez, dia a dia</h2><span class="c">clique num dia pra abrir o detalhe por cliente</span><span class="rule"></span></div>
+      <div id="timelineList"></div>
+    </section>
+
+    <!-- PENDÊNCIAS -->
+    <section class="view" id="view-pend">
+      <div class="sect"><h2>O que está pendente agora</h2><span class="rule"></span></div>
+      <div class="pcols" id="pendCols"></div>
+    </section>
+  </div>
+</main>
+
+<footer><div class="wrap">Drop Dead Content · painel gerado a partir do FUP diário da Marianna</div></footer>
+
+<script>
+/* ==========================================================================
+   CONFIG
+   Ordem dos clientes = ordem das colunas na planilha (depois das 4 primeiras).
+   Cada cliente ocupa 2 colunas: "o que foi feito" e "status".
+   Pra ADICIONAR um cliente novo no formulário: adicione o nome aqui na mesma
+   ordem em que a coluna dele aparece na planilha. Nada mais precisa mudar.
+   Tailor-Made English foi adicionado como o 10º cliente (última coluna) —
+   se a pergunta dela no formulário não estiver por último, ajuste a ordem
+   abaixo pra bater com a ordem real das colunas na planilha.
+   ========================================================================== */
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtOLrsJL0GcIS9Crbu9KqEC_WEg1f658M4oC1bc-CMkybuPbVb5Q-Xl6yKorXdZGnl9miZpAc043oQ/pub?output=csv';
+const CLIENTS = ['Kátia Baida','Sterileno','Quality','Mariana Gomes','Duda Werneck','Rachel Teixeira','Studio L7','Escola Pró-Arte','Creare','Tailor-Made English'];
+const COL_DATE=1, COL_GERAL=2, COL_CLIENTES=3, COL_FIRST=4; // primeira coluna de cliente
+
+const STATUS = {
+  voce:   {label:'Com você',           color:'var(--voce)',    hex:'#FF2E63', rank:0},
+  travado:{label:'Travado',            color:'var(--travado)', hex:'#E0453A', rank:1},
+  aprov:  {label:'Aprovação cliente',  color:'var(--aprov)',   hex:'#E8A33D', rank:2},
+  prod:   {label:'Em produção',        color:'var(--prod)',    hex:'#3B6EA5', rank:3},
+  cliente:{label:'Aguardando cliente', color:'var(--cliente)', hex:'#8A5CD1', rank:4},
+  ok:     {label:'No ar / agendado',   color:'var(--ok)',      hex:'#2E9E6B', rank:5},
+  na:     {label:'Sem novidade',       color:'var(--na)',      hex:'#9A958C', rank:6},
+};
+
+/* ============================ STATE ============================ */
+let HEADER=[], DATA=[], NEWEST=null;
+let selectedClient = CLIENTS[0];
+
+/* ============================ CSV PARSER ============================ */
+function parseCSV(text){
+  const rows=[]; let row=[], field='', inQ=false;
+  text = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"';i++;} else inQ=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQ=true;
+      else if(c===','){ row.push(field); field=''; }
+      else if(c==='\n'){ row.push(field); field=''; rows.push(row); row=[]; }
+      else field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+/* ============================ HELPERS ============================ */
+function norm(s){ return (s||'').trim().toLowerCase().replace(/\.+$/,'').replace(/\s+/g,' '); }
+const TRIVIAL_STATUS = new Set(['','-','já informado pela manhã','já especificado pela manhã','já especificado pela tarde','já informado','já especificado']);
+const TRIVIAL_FEITO  = new Set(['','-','nada feito hoje','já informado pela manhã','já especificado pela manhã','já especificado pela tarde']);
+function meaningfulStatus(s){ return !TRIVIAL_STATUS.has(norm(s)); }
+function meaningfulFeito(s){ return !TRIVIAL_FEITO.has(norm(s)); }
+function parseDate(s){ const m=(s||'').trim().match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m? new Date(+m[3],+m[2]-1,+m[1]) : null; }
+function daysBetween(a,b){ return a&&b? Math.round((b-a)/86400000) : null; }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function linkify(s){ return esc(s).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>'); }
+function colIdx(clientIndex){ return {f:COL_FIRST+clientIndex*2, s:COL_FIRST+clientIndex*2+1}; }
+
+/* ============================ CLASSIFIER ============================ */
+function classify(status, feito){
+  const s = norm(status);
+  if(!meaningfulStatus(s)) return 'na';
+  const t = ((status||'')+' '+(feito||'')).toLowerCase();
+  if(/aguardando.*(voc[êe]|gabi|escopo|informa[çc][õo]es do escopo)|pedi.*(gabi|para a gabi|pra voc[êe]|providenciar)|gabi providenciar|recibo|gabi.*tentando/.test(t)) return 'voce';
+  if(/aguardando.{0,45}aprova|cobrei.{0,30}aprova|em aprova|aprova[çc]/.test(t)) return 'aprov';
+  if(/agende|agendad|em alta e legenda|aprovou|aprovad[oa]|j[áa].{0,14}post/.test(t)) return 'ok';
+  if(/em produ|em andamento|em cria|design.{0,18}(produ|andamento|cria)|escrever copy|precisamos fazer as cop/.test(t)) return 'prod';
+  if(/aguardando|esperando resposta|sem respostas?|retorno do forms|formul[áa]rio|reuni[ãa]o|fotos/.test(t)) return 'cliente';
+  return 'na';
+}
+
+/* current meaningful status + last activity per client */
+function clientState(ci){
+  const {f,s}=colIdx(ci);
+  let cur=null, last=null;
+  for(let r=DATA.length-1;r>=0;r--){
+    const row=DATA[r];
+    if(!cur && meaningfulStatus(row[s])) cur={status:row[s], feito:row[f], date:row[COL_DATE]};
+    if(!last && meaningfulFeito(row[f])) last={feito:row[f], date:row[COL_DATE]};
+    if(cur&&last) break;
+  }
+  const key = cur ? classify(cur.status, cur.feito) : (last ? classify('', last.feito) : 'na');
+  const lastDate = last? parseDate(last.date) : (cur?parseDate(cur.date):null);
+  const age = daysBetween(lastDate, NEWEST);
+  return {key, cur, last, lastDate, age};
+}
+
+/* ============================ INGEST ============================ */
+function ingest(text, mode){
+  const rows = parseCSV(text).filter(r=>r.length>1 && (r[COL_DATE]||'').trim());
+  HEADER = rows[0]||[];
+  DATA = rows.slice(1).filter(r=> parseDate(r[COL_DATE]));
+  NEWEST = DATA.reduce((mx,r)=>{const d=parseDate(r[COL_DATE]); return (d&&(!mx||d>mx))?d:mx;}, null);
+  // sync label
+  const dot=document.getElementById('syncDot'), lab=document.getElementById('syncLabel'), notice=document.getElementById('savedNotice');
+  const now=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  if(mode==='ao vivo'){ dot.className='dot'; lab.textContent='ao vivo · '+now; notice.classList.remove('show'); }
+  else if(mode==='dados salvos'){ dot.className='dot saved'; lab.textContent='dados salvos'; notice.classList.add('show'); }
+  else { dot.className='dot err'; lab.textContent='erro ao ler'; }
+  renderAll();
+}
+
+/* ============================ RENDER: PAINEL ============================ */
+function renderPainel(){
+  const states = CLIENTS.map((c,i)=>({name:c, i, ...clientState(i)}));
+  // KPIs
+  const count=k=>states.filter(s=>s.key===k).length;
+  const lastRow = DATA[DATA.length-1];
+  const lastDate = lastRow? lastRow[COL_DATE] : '—';
+  const kpis=[
+    {k:'Clientes ativos', v:CLIENTS.length, meta:'no FUP'},
+    {k:'Com você', v:count('voce'), meta:'esperando a Gabi', hot:true},
+    {k:'Aprovação cliente', v:count('aprov'), meta:'aguardando ok'},
+    {k:'Em produção', v:count('prod'), meta:'design rolando'},
+    {k:'Último report', v:lastDate, meta:'entrada mais recente', small:true},
+  ];
+  document.getElementById('kpis').innerHTML = kpis.map(x=>`
+    <div class="kpi ${x.hot?'hot':''}">
+      <div class="k">${x.k}</div>
+      <div class="v" style="${x.small?'font-size:19px;letter-spacing:0':''}">${esc(String(x.v))}</div>
+      <div class="meta">${x.meta}</div>
+    </div>`).join('');
+  document.getElementById('tPainel').textContent = CLIENTS.length;
+
+  states.sort((a,b)=> STATUS[a.key].rank-STATUS[b.key].rank || (b.age??-1)-(a.age??-1));
+  document.getElementById('painelCount').textContent = 'ordenado por urgência';
+  document.getElementById('clientGrid').innerHTML = states.map(s=>{
+    const st=STATUS[s.key];
+    const statusText = s.cur? s.cur.status : (s.last? '(sem status; última ação abaixo)' : 'sem registros');
+    const shown = s.cur? s.cur.status : (s.last? s.last.feito : '—');
+    const ageCls = s.age==null?'':(s.age>=6?'bad':(s.age>=3?'warn':''));
+    const ageTxt = s.age==null?'':(s.age===0?'hoje':('há '+s.age+'d'));
+    return `<div class="ccard">
+      <div class="spine" style="background:${st.hex}"></div>
+      <div class="body">
+        <div class="row1">
+          <span class="name">${esc(s.name)}</span>
+          <span class="pill" style="background:${st.hex}1f;color:${st.hex}">${st.label}</span>
+        </div>
+        <div class="txt">${linkify(shown)}</div>
+        <div class="foot">
+          <span>última ação: ${esc(s.last?s.last.date:(s.cur?s.cur.date:'—'))}</span>
+          ${ageTxt?`<span class="age ${ageCls}">${ageTxt}</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================ RENDER: POR CLIENTE ============================ */
+function renderChips(){
+  document.getElementById('clientChips').innerHTML = CLIENTS.map((c,i)=>{
+    const st=STATUS[clientState(i).key];
+    return `<button class="chip ${c===selectedClient?'on':''}" onclick="selectClient(${i})">
+      <span class="cdot" style="background:${st.hex}"></span>${esc(c)}</button>`;
+  }).join('');
+}
+function selectClient(i){ selectedClient=CLIENTS[i]; renderChips(); renderClientHistory(); }
+function renderClientHistory(){
+  const i=CLIENTS.indexOf(selectedClient); const {f,s}=colIdx(i);
+  const entries=[];
+  for(let r=DATA.length-1;r>=0;r--){
+    const row=DATA[r], feito=row[f], status=row[s];
+    if(!meaningfulFeito(feito) && !meaningfulStatus(status)) continue;
+    entries.push({date:row[COL_DATE], feito, status, key:classify(status,feito)});
+  }
+  const cs=clientState(i); const st=STATUS[cs.key];
+  const head=`<div class="sect" style="margin-top:0">
+      <h2>${esc(selectedClient)}</h2>
+      <span class="pill" style="background:${st.hex}1f;color:${st.hex}">${st.label}</span>
+      <span class="c">${entries.length} registro(s)</span><span class="rule"></span></div>`;
+  const body = entries.length? `<div class="tl">`+entries.map(e=>{
+    const est=STATUS[e.key];
+    const parts=[];
+    if(meaningfulFeito(e.feito)) parts.push(`<div class="block"><div class="lab">Feito</div><div class="val">${linkify(e.feito)}</div></div>`);
+    if(meaningfulStatus(e.status)) parts.push(`<div class="block"><div class="lab">Status</div><div class="val">${linkify(e.status)}</div></div>`);
+    return `<div class="entry">
+      <span class="node" style="border-color:${est.hex}"></span>
+      <div class="date">${esc(e.date)}<span class="st" style="background:${est.hex}1f;color:${est.hex}">${est.label}</span></div>
+      ${parts.join('')}
+    </div>`;
+  }).join('')+`</div>` : `<div class="pempty">Nenhum registro pra esse cliente ainda.</div>`;
+  document.getElementById('clientHistory').innerHTML = head+body;
+}
+
+/* ============================ RENDER: LINHA DO TEMPO ============================ */
+function renderTimeline(){
+  const days=[];
+  for(let r=DATA.length-1;r>=0;r--){
+    const row=DATA[r];
+    const perClient=[];
+    CLIENTS.forEach((c,i)=>{const {f}=colIdx(i); if(meaningfulFeito(row[f])) perClient.push({name:c, feito:row[f], key:clientState(i)&&classify(row[colIdx(i).s],row[f])});});
+    days.push({date:row[COL_DATE], geral:row[COL_GERAL], clientes:row[COL_CLIENTES], perClient});
+  }
+  document.getElementById('tDays').textContent = days.length;
+  document.getElementById('timelineList').innerHTML = days.map((d,idx)=>{
+    const clientList = d.perClient.map(pc=>{const st=STATUS[pc.key||'na'];return `<span class="tag"><span class="td" style="background:${st.hex}"></span>${esc(pc.name)}</span>`;}).join('');
+    const detail = d.perClient.map(pc=>{const st=STATUS[pc.key||'na'];return `<div class="drow"><div class="dn"><span class="td" style="background:${st.hex}"></span>${esc(pc.name)}</div><div class="dt">${linkify(pc.feito)}</div></div>`;}).join('') || `<div class="pempty">Sem detalhe por cliente neste dia.</div>`;
+    return `<div class="day ${idx===0?'open':''}" id="day${idx}">
+      <div class="dhead" onclick="document.getElementById('day${idx}').classList.toggle('open')">
+        <div class="dl">
+          <div class="ddate">${esc(d.date)}</div>
+          <div class="dsum">${linkify(d.geral||'—')}</div>
+          <div class="dcli">${clientList}</div>
+        </div>
+        <span class="caret">▸</span>
+      </div>
+      <div class="ddetail">${detail}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================ RENDER: PENDÊNCIAS ============================ */
+function renderPend(){
+  const states = CLIENTS.map((c,i)=>({name:c, i, ...clientState(i)}));
+  const cols=[
+    {key:'voce',   title:'Esperando você',      icon:'⚡'},
+    {key:'aprov',  title:'Aprovação do cliente', icon:'🕓'},
+    {key:'cliente',title:'Aguardando cliente / forms', icon:'📨'},
+    {key:'prod',   title:'Em produção',          icon:'🎨'},
+    {key:'ok',     title:'No ar / agendado',     icon:'✅'},
+  ];
+  const pend = states.filter(s=>['voce','aprov','cliente','travado'].includes(s.key)).length;
+  document.getElementById('tPend').textContent = pend;
+  document.getElementById('pendCols').innerHTML = cols.map(col=>{
+    const list = states.filter(s=>s.key===col.key).sort((a,b)=>(b.age??-1)-(a.age??-1));
+    const st=STATUS[col.key];
+    const items = list.length? list.map(s=>{
+      const text = s.cur? s.cur.status : (s.last? s.last.feito : '—');
+      return `<div class="pitem">
+        <div class="pn">${esc(s.name)}<span class="pd">${esc(s.last?s.last.date:(s.cur?s.cur.date:''))}${s.age!=null&&s.age>0?' · há '+s.age+'d':''}</span></div>
+        <div class="ps">${linkify(text)}</div>
+      </div>`;
+    }).join('') : `<div class="pempty">Nada aqui 🎉</div>`;
+    return `<div class="pcol">
+      <div class="ph"><span class="pt"><span class="pdot" style="background:${st.hex}"></span>${col.icon} ${col.title}</span><span class="pc">${list.length}</span></div>
+      <div class="pbody">${items}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ============================ ORCHESTRATION ============================ */
+function renderAll(){ renderPainel(); renderChips(); renderClientHistory(); renderTimeline(); renderPend(); }
+function setTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on', t.dataset.tab===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on', v.id==='view-'+name));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function loadLive(){
+  const btn=document.getElementById('refreshBtn'), icon=document.getElementById('refIcon');
+  btn.classList.add('busy'); icon.outerHTML='<span class="spin" id="refIcon"></span>';
+  try{
+    const res=await fetch(CSV_URL,{cache:'no-store'});
+    if(!res.ok) throw new Error('http');
+    const txt=await res.text();
+    if(!txt || txt.length<80 || txt.trim().startsWith('<')) throw new Error('empty');
+    ingest(txt,'ao vivo');
+  }catch(e){
+    ingest(INITIAL_CSV,'dados salvos');
+  }
+  const b=document.getElementById('refreshBtn'); b.classList.remove('busy');
+  document.getElementById('refIcon').outerHTML='<span id="refIcon">↻</span>';
+}
+
+/* ============================ DADOS SALVOS (fallback) ============================ */
+const INITIAL_CSV = String.raw`Carimbo de data/hora,Data,O que você fez hoje de forma geral?,Com quais clientes você trabalhou hoje?,Kátia Baida: O que foi feito hoje?,"Kátia Baida: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",Sterileno: O que foi feito hoje?,"Sterileno: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",Quality: O que foi feito hoje?,"Quality: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",Mariana Gomes: O que foi feito hoje?,"Mariana Gomes: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",O que foi feito hoje?,"Duda Werneck: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",O que foi feito hoje?,"Rachel Teixeira: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",O que foi feito hoje?,"Studio L7: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",Escola Pró-Arte: O que foi feito hoje?,"Escola Pró-Arte: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo...",Creare: O que foi feito hoje?,"Creare: Qual o status do cliente hoje?
+Ex: aguardando aprovação copy, aprovou a arte, agora a rebeca ta fazendo..."
+25/06/2026 19:18:44,25/06/2026,"- Enviei os forms para os clientes
+- Cobrei as aprovações da Rachel","Sterileno, Quality, Mariana Gomes, Duda Werneck, Kátia Baida, Rachel Teixeira, Studio L7, Pró-Arte, Creare, Girasoli",Enviei o formulário,"Designs em criação ainda, pois na minha cabeça eu havia enviado o conteúdo no Notion Pra Rê, porém, devo ter aberto pra fazer isso e acabei esquecendo por ter tido que parar para fazer outra coisa na hora.",Enviei o formulário,Designs para produção.,Enviei o formulário,Aguardando retorno em relação ao formulário.,Enviei o formulário,Design para criação.,Enviei o formulário,Designs para produção.,"Enviei o formulário, Cobrei aprovação das copys",Aguardando a reunião entre vocês para fazer ajustes das copies.,Enviei o formulário,Aguardando design do post que será fixado.,Enviei o formulário,Aguardando resposta do formulário.,Enviei o formulário,Aguardando respostas do formulário.
+26/06/2026 10:38:08,26/06/2026,"- Conferi se já havia algum retorno com relação ao preenchimento do formulário do planejamento de Agosto/26. Porém, nenhuma resposta ainda;
+- Conferi o andamento das produções.","Sterileno, Quality, Mariana Gomes, Duda Werneck, Kátia Baida, Rachel Teixeira, Studio L7, Pró-Arte, Creare, Girasoli","Cobrei entrega dos designs da Rebeca, Conferi o andamento das produções e cobrei a Rê.","Todos os designs em produção:
+
+KÁTIA BAIDA | JUL/26
+
+[JUL 01] O que as férias fazem com o seu corpo - https://app.notion.com/p/JUL-01-O-que-as-f-rias-fazem-com-o-seu-corpo-36db9f9e1ac680b5aad8d54bc3a7a7eb?source=copy_link
+
+[JUL 08] Encerramento de julho — presença pessoal - https://app.notion.com/p/JUL-08-Encerramento-de-julho-presen-a-pessoal-36db9f9e1ac680c8b03ad94a8fd2677a?source=copy_link",Cobrei entrega dos designs da Rebeca,"Todos os designs em produção:
+
+STERILENO | JUL/26
+
+[JUL 01] Dia do Hospital + Vacina BCG - https://app.notion.com/p/JUL-01-Dia-do-Hospital-Vacina-BCG-381b9f9e1ac680a5bbfffa375d94a6a6?source=copy_link",Conferi se já havia alguma resposta em relação ao formulário.,Ainda sem respostas no formulário.,"Cobrei entrega dos designs da Rebeca, Conferi se havia resposta no forms.","Todos os designs em produção:
+
+MARIANA GOMES | JUL/26
+
+[JUL 01] Shakira - https://app.notion.com/p/JUL-01-Shakira-380b9f9e1ac6801d9828ea603196b02e?source=copy_link
+
+Sem respostas no forms.","Cobrei entrega dos designs da Rebeca, Conferi se havia resposta no forms, mas ainda não tem.","Todos os designs em produção:
+
+DUDA WERNECK | JUL/26
+
+[JUL 01] O plantão que me ensinou a não ignorar o silêncio - https://app.notion.com/p/JUL-01-O-plant-o-que-me-ensinou-a-n-o-ignorar-o-sil-ncio-388b9f9e1ac6802cb7edc411dba5785d?source=copy_link
+
+Ainda sem nenhum retorno no forms.",Aguardando a reunião de vocês para atualizarmos as aprovações no Trello.,Aguardando a reunião de vocês para atualizarmos as aprovações no Trello.,"Cobrei entrega dos designs da Rebeca, Conferi se já havia alguma resposta no forms, mas ainda não.","Design do post a ser fixado em produção:
+
+STUDIO L7 | JUL/26
+
+[JUN 03] FIXADO STUDIO L7 - https://app.notion.com/p/JUN-03-FIXADO-STUDIO-L7-352b9f9e1ac680eb9674ff9d9bc4ad71?source=copy_link 
+
+JULHO/26 - ESCREVER COPY
+
+Ainda sem respostas no forms.",Outro:,Ainda sem retorno no forms.,Conferi se tinha resposta no forms.,Ainda sem respostas no forms.
+29/06/2026 16:08:34,29/06/2026,"- Cobrei os preenchimentos dos formulários de mapeamento estratégico para agosto/2026; 
+- Enviei os primeiros designs de julho/26 para aprovação da Sterileno;
+- Atualizei os andamentos no Notion.","Sterileno, Quality, Mariana Gomes, Duda Werneck, Kátia Baida, Rachel Teixeira, Studio L7, Pró-Arte, Creare, Girasoli","Cobrei resposta do formulário, Sobre as fotos novas, a Kátia pediu pra Gabi ver alguém pra fazer as fotos novas dela pra usarmos.","- Sobre as fotos novas, pediu pra Gabi ver alguém pra fazer as fotos novas dela.
+- Cobrei o preenchimento do formulário.
+- Designs em andamento.","Cobrei resposta do formulário, Cobrei aprovação das artes","- 2 primeiros designs de julho/26 em aprovação:
+
+[JUL 01] Dia do Hospital + Vacina BCG - https://app.notion.com/p/JUL-01-Dia-do-Hospital-Vacina-BCG-381b9f9e1ac680a5bbfffa375d94a6a6?source=copy_link
+
+- Cobrei o preenchimento do formulário.",Cobrei resposta do formulário,Aguardando resposta do formulário de agosto e de estratégia.,"Cobrei resposta do formulário, Conferi o andamento no Notion.","- Designs em andamento.
+- Cobrei o preenchimento do formulário.","Cobrei resposta do formulário, Conferi o andamento no Notion.","- Designs em andamento.
+- Cobrei o preenchimento do formulário.",Cobrei resposta do formulário,"- Ainda aguardando as observações da cliente em relação às aprovações na reunião com você e a designer.
+- Cobrei o preenchimento do formulário.","Nada feito hoje, Apenas conferi o preenchimento e baixei as respostas para enviar para Gabi.","Luciana foi a única que respondeu o forms de agosto/26. Observações dela no whats sobre a dificuldade de achar imóveis e que ainda está pensando no mês.","Cobrei resposta do formulário, Nada feito hoje",- Cobrei o preenchimento do formulário.,Cobrei resposta do formulário,- Cobrei o preenchimento do formulário.
+30/06/2026 18:34:31,30/06/2026,"Cobrei o Daniel, chequei os andamentos no Whats e no Notion, chequei o forms.","Sterileno, Quality, Mariana Gomes, Kátia Baida, Rachel Teixeira","Perguntei pra Kátia se para julho postaremos nos stories Emsculpt e Fotona, ou apenas um dos dois. Mas ela ainda não me retornou.","- Perguntei pra Kátia se para julho postaremos nos stories Emsculpt e Fotona, ou apenas um dos dois. Mas ela ainda não me retornou.
+- Ela ainda não respondeu o forms também.","Cobrei resposta do formulário, Cobrei aprovação das artes","- Cobrei o Daniel sobre as aprovações, ele respondeu que não conseguiu aprovar e nem preencher nada hoje. 
+- Daniel me pediu para cobrá-lo novamente próximo do horário do almoço amanhã (01/07).","Agradeci a Janaína pelo preenchimento do forms. Eles enviaram a pasta de fotos pro seu e-mail, Gabi.","- Agradeci a Janaína pelo preenchimento do forms.
+- Eles enviaram a pasta de fotos pro seu e-mail, Gabi.","Cobrei resposta do formulário, ","- Mari enviou pelo whats os próximos cases ao invés de mandar por forms (Spotify → CAC x LTV, LEGO → turnaround, IKEA → eficiência operacional, Starbucks → fidelização). Coloquei todos no Notion pra você.
+- A Mariana pediu pra te avisar que se você achar algum case ruim é pra você falar pra ela que ela manda outro.",Nada feito hoje,-,Agradeci a Rachel pelo preenchimento do forms. Designs em andamento.,"- Agradeci a Rachel pelo preenchimento do forms.
+- Designs em andamento.",Nada feito hoje,-,Outro:,- Aguardando retorno do forms.,Nada feito hoje,- Aguardando retorno do forms.
+01/07/2026 10:41:57,01/07/2026,Enviei docs de designs e legendas para aprovação.,"Sterileno, Mariana Gomes, Kátia Baida","Recebi os designs da Rebeca, Enviei as artes para aprovação do cliente","- Posts 1, 2 e 3 de julho/26 em aprovação com a cliente
+- Agendar stories apenas de Fotona","Recebi os designs da Rebeca, Enviei as artes para aprovação do cliente, Cobrei aprovação das artes",- Todos os posts em aprovação com o Daniel e aguardando retorno.,Nada feito hoje,-,"Recebi os designs da Rebeca, Enviei as artes para aprovação do cliente, Artes aprovadas pelo cliente, Artes em alta e legenda enviadas para a cliente postar.",- Post 1 aprovado e já enviado para a Mari Gomes postar.,Nada feito hoje,-,Conferi o andamento no Trello. Artes em produção.,"- Conferi o andamento no Trello. 
+- Artes em produção.",Nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-
+01/07/2026 17:35:01,01/07/2026,Agendei postagens pelo mLabs e pelo Meta. Tentei achar o escopo da Creare e da Pró-Arte.,"Sterileno, Kátia Baida, Pró-Arte, Creare",Agendei os posts,"Além do que já enviei pela manhã, agendei os stories do Fotona durante a tarde.",Agendei os posts,"Além de ter trabalhado com as aprovações pela manhã, durante a tarde agendei as postagens do mês de julho pelo mLabs.",Nada feito hoje,-,Já especificado pela manhã.,-,Nada feito hoje,-,Já especificado pela manhã.,-,Nada feito hoje,-,Outro:,"O Eduardo me pediu o escopo da Pró-Arte, mas não encontrei no Notion. Mandei mensagem pra você perguntando, Gabi. Obrigada!",Procurei o escopo da escola para enviar para o Eduardo.,"O Eduardo me pediu o escopo da Pró-Arte, mas não encontrei no Notion. Mandei mensagem pra você perguntando, Gabi. Obrigada!"
+02/07/2026 09:32:15,02/07/2026,"Enviei materiais para aprovação, printei os perfis e feeds do Instagram, conferi o andamento do preenchimento do forms, conferi o andamento dos demais posts.","Sterileno, Quality, Mariana Gomes, Duda Werneck, Kátia Baida, Rachel Teixeira, Studio L7, Pró-Arte, Creare, Girasoli",Prints e aprovações.,"PRINTS PERFIL E FEED KÁTIA BAIDA - https://drive.google.com/drive/folders/1MOjKoGmM9V1ENd0bWmKSJtQRw0O6SQgx?usp=drive_link
+
+- Designs em aprovação.
+- Demais designs em produção.",Prints do perfil e do feed + posts já agendados.,"PRINTS PERFIL E FEED STERILENO - https://drive.google.com/drive/folders/1wPElSYVUdQWq15lWfLat31xPLZOBnBcm?usp=drive_link
+
+- Posts aprovados e já agendados.",Prints do perfil e feed.,PRINTS DO PERFIL E FEED QUALITY - https://drive.google.com/drive/folders/17UiL5BDrK3T72yey2Vvj8cxVYKt6Lt2_?usp=drive_link,"Cobrei aprovação das artes, Artes aprovadas pelo cliente, Designs em alta e legenda enviados para a cliente postar + Prints do perfil e feed.","PRINTS PERFIL E FEED MARI GOMES - https://drive.google.com/drive/folders/18wgqAHxBa_MpNLpl6Enicmf84hddDaLN?usp=drive_link
+
+- Enviei post 2 de julho/26 para aprovação.
+- Post 2 aprovado e já com a cliente para ela postar.",Prints do perfil e do feed. Conferi o andamento da produção.,"PRINTS PERFIL E FEED DUDA WERNECK - https://drive.google.com/drive/folders/1N2fir_aCgXyg3IImpEyI0XidCayntFtg?usp=drive_link
+
+- Designs em produção.",Conferi o andamento das produções + Print do perfil e do feed.,"PRINTS DO PERFIL E FEED ALGODÃO CRU - https://drive.google.com/drive/folders/1pJJY-1oGq13tQWUK7cygmGrPhJqciLnH?usp=drive_link
+
+- Designs em andamento.","Recebi os designs da Rebeca, Enviei as artes para aprovação do cliente, Prints do feed e do perfil.","PRINTS DO PERFIL E DO FEED STUDIO L7 - https://drive.google.com/drive/folders/16DehWL7sh7zjC_w4lSDZGJQ2QDS8SRbY?usp=drive_link
+
+- Post 3 para ser fixado no feed em aprovação.",Outro:,"PRINTS DO PERFIL E DO FEED DA PRÓ-ARTE NO NOTION.
+
+- Aguardando você me enviar o escopo completo que pedi no WhatsApp pra eu poder passar pro seu pai.",Prints do perfil e do feed.,"PRINTS DO PERFIL E DO FEED DA CREARE NO NOTION.
+
+- Aguardando você me enviar o escopo completo que pedi no WhatsApp pra eu poder passar pro seu pai."
+02/07/2026 15:24:54,02/07/2026,"Na parte da tarde, cobrei os clientes que ainda não responderam o forms de Agosto.","Sterileno, Duda Werneck, Kátia Baida, Pró-Arte, Creare",Cobrei resposta do formulário,Kátia Baida relembrada sobre o preenchimento do forms. Prazo: 03/07.,Cobrei resposta do formulário,Daniel relembrado sobre o preenchimento do forms. Prazo: 03/07.,Já informado pela manhã.,Já informado pela manhã.,Já informado pela manhã.,Já informado pela manhã.,Cobrei resposta do formulário,Duda Werneck relembrada sobre o preenchimento do forms. Prazo: 03/07.,Já informado pela manhã.,Já informado pela manhã.,Precisamos fazer as copies de agosto/26 de acordo com o que ela nos enviou pelo whats.,Precisamos fazer as copies de agosto/26 de acordo com o que a Luciana nos enviou pelo Whats.,Cobrei resposta do formulário,Eduardo relembrado sobre o preenchimento do forms. Prazo: 03/07.,Cobrei resposta do formulário,Eduardo relembrado sobre o preenchimento do forms. Prazo: 03/07.
+06/07/2026 17:43:45,06/07/2026,"Enviei copies para aprovação, conferi o andamento no Notion e tentei organizar o Canva de aprovações por pastas.","Sterileno, Mariana Gomes, Kátia Baida",Enviei planejamento + copy para aprovação,Aguardando aprovação dos designs de julho/26 e das copies de agosto/26.,Enviei planejamento + copy para aprovação,Enviei as copies de agosto/26 para aprovação.,Nada feito hoje,-,Enviei planejamento + copy para aprovação,Enviei as copies de agosto/26 para aprovação.,Nada feito hoje,-,-,-,Nada feito hoje,-,Outro:,Aguardando retorno da Gabi sobre o escopo completo para eu poder passar para o Eduardo.,-,Aguardando retorno da Gabi sobre o escopo completo para eu poder passar para o Eduardo.
+07/07/2026 15:39:39,07/07/2026,Enviei conteúdos para aprovação e agendei postagens.,"Mariana Gomes, Kátia Baida","Cliente pediu ajuste nas copys, Cliente aprovou as copys, Recebi os designs da Rebeca, Enviei as artes para aprovação do cliente, Agendei os posts","- Aguardando a cliente enviar a foto que ela quer que usemos no post 6 de julho/26;
+- Solicitei ajustes na copy do post 3 de agosto/26;
+- Agendei as demais postagens aprovadas do mês de julho/26;
+- Enviei as duas últimas postagens de julho/26 para aprovação.",Nada feito hoje,-,Nada feito hoje,-,Enviei as artes para aprovação do cliente,- Enviei as duas últimas postagens de julho/26 para aprovação da cliente.,Nada feito hoje,-,nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-
+09/07/2026 10:09:03,09/07/2026,"Verifiquei o andamento de tudo no Notion, atualizei informações sobre alteração e enviei designs para aprovação.","Duda Werneck, Kátia Baida",Atualizei o Notion para a Gabi com o link da postagem que a Kátia enviou como referência para a substituição do tema do post 3 de agosto.,"Aguardando aprovações da cliente, foto para o ajuste do post 6 de julho/26 e nova copy para o post 3 de agosto/26.",Nada feito hoje,Ainda aguardando aprovação das copies de agosto/26. Não cobrei hoje por ser feriado.,Nada feito hoje,-,Nada feito hoje,Ainda aguardando aprovação das copies de agosto/26 e dos últimos 2 designs dos posts de julho/26.,Enviei as artes para aprovação do cliente,Ainda aguardando aprovação dos designs dos posts de julho/26 e das copies de agosto/26. ,Nada feito hoje.,-,Nada feito hoje,-,Nada feito hoje,Ainda aguardando as informações do escopo completo para enviar para o Eduardo.,Nada feito hoje,Ainda aguardando as informações do escopo completo para enviar para o Eduardo.
+14/07/2026 11:11:07,14/07/2026,"Cobrei aprovações, enviei conteúdos e designs para o cliente postar, conferi o andamento no Notion e no Trello.","Sterileno, Mariana Gomes, Duda Werneck, Kátia Baida, Rachel Teixeira, Studio L7","Cobrei aprovação das artes, A cliente solicitou o recibo do pagamento do mês julho/26. Pedi para a Gabi providenciar.","- Aguardando a foto que a Kátia ficou de nos enviar para fazermos a alteração no post 6;
+- Aguardando aprovação dos dois últimos posts de julho/26;
+- A cliente solicitou o recibo do pagamento do mês julho/26 e eu pedi para a Gabi providenciar.",Cobrei aprovação das copys,- Aguardando aprovação das copies do mês de agosto/26.,Nada feito hoje,-,"Cobrei aprovação das artes, Enviei os designs em alta e as legendas para a cliente postar e cobrei a aprovação das copies de agosto/26.","- Cobrei a aprovação dos últimos posts de julho/26;
+- Enviei os designs em alta e as legendas para a cliente postar;
+- Cobrei a aprovação das copies de agosto/26.",Cobrei aprovação das artes,- Cobrei novamente a aprovação das postagens de julho/26.,Conferi o andamento no Trello.,"- Há 2 posts em aprovação e 1 em produção (julho/26);
+- A Rachel precisou tirar uma dúvida sobre financeiro, informei que eu não cuido dessa parte, e pedi para ela ver direto com a Gabi.","Cobrei aprovação das artes, Respondi a cliente sobre a dúvida dela quanto ao post em carrossel.","- Cobrei aprovação do último post de julho/26;
+- Expliquei sobre a dúvida que a cliente ficou na aprovação. Ainda aguardando a aprovação.",Nada feito hoje,- Ainda aguardando da Gabi o envio das informações sobre o escopo completo dos serviços prestados para a escola para enviar para o Eduardo.,Nada feito hoje,- Ainda aguardando da Gabi o envio das informações sobre o escopo completo dos serviços prestados para a escola para enviar para o Eduardo.
+18/07/2026 09:36:18,18/07/2026,Cobrei aprovações e passei copies para o Notion.,Duda Werneck,Nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-,"Cliente aprovou as copys, Subi a copy no Notion para a Rebeca, Cobrei aprovação das artes","- Cliente aprovou as copies de agosto/26;
+- Coloquei as copies de agosto/26 no Notion pra Rê;
+- Cobrei NOVAMENTE da cliente as aprovações dos designs de julho/26, pois ela aprovou apenas as copies de agosto/26, e NADA falou sobre julho/26.",Nada feito hoje.,-,Nada feito hoje,-,Nada feito hoje,-,Nada feito hoje,-
+21/07/2026 09:52:24,21/07/2026,Cobrei aprovações e conferi o andamento no Notion.,"Sterileno, Mariana Gomes, Duda Werneck",Nada feito hoje,Ainda aguardando as fotos para enviar para a Rê alterar as postagens.,Cobrei aprovação das copys,Ainda aguardando a aprovação das copies do mês de agosto/26.,Nada feito hoje,Gabi esperando resposta do cliente pelo que acompanhei no WhatsApp.,Cobrei aprovação das copys,Ainda aguardando aprovação das copies de agosto/26.,Cobrei aprovação das artes,Ainda aguardando aprovação dos designs de julho/26 para eu poder postar.,Conferi o andamento.,Apenas conferi o andamento.,"Nada feito hoje, Gabi está tentando agendar uma reunião com a Luciana pelo que acompanhei no WhatsApp.",Gabi está tentando agendar uma reunião com a Luciana pelo que acompanhei no WhatsApp.,Nada feito hoje,-,Nada feito hoje,-
+`;
+
+loadLive();
+</script>
+</body>
+</html>
